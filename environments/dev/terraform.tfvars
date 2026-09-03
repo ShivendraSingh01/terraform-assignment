@@ -1,5 +1,5 @@
 resource_group_name  = "infra_rg"
-location             = "centralindia"
+location             = "eastasia"
 name_prefix          = "devdemo"
 admin_username       = "azureuser"
 storage_account_name = "devdemostorage1703"

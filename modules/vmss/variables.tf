@@ -21,7 +21,7 @@ variable "admin_username" {
 variable "vmss_sku" {
   type        = string
   description = "SKU for the virtual machine scale set"
-  default     = "Standard_B2as_v2"
+  default     = "Standard_B2ts_v2"
 }
 
 variable "vmss_instance_count" {

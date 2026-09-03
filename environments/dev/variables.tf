@@ -89,7 +89,7 @@ variable "app_gateway_sku_capacity" {
 variable "vmss_sku" {
   type        = string
   description = "VMSS SKU"
-  default     = "Standard_B2ats_v2"
+  default     = "Standard_B2ts_v2"
 }
 
 variable "vmss_instance_count" {
