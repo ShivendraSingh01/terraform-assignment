@@ -54,6 +54,19 @@ resource "azurerm_linux_virtual_machine_scale_set" "vmss" {
   }
 }
 
+resource "azurerm_virtual_machine_scale_set_extension" "nginx" {
+  name                         = "install-nginx"
+  virtual_machine_scale_set_id = azurerm_linux_virtual_machine_scale_set.vmss.id
+  publisher                    = "Microsoft.Azure.Extensions"
+  type                         = "CustomScript"
+  type_handler_version         = "2.1"
+  auto_upgrade_minor_version   = true
+
+  settings = jsonencode({
+    commandToExecute = "apt-get update && apt-get install -y nginx && systemctl enable nginx && systemctl restart nginx && echo 'devdemo VMSS backend healthy' > /var/www/html/index.html"
+  })
+}
+
 resource "azurerm_monitor_autoscale_setting" "autoscale" {
   name                = local.autoscale_name
   resource_group_name = var.resource_group_name
