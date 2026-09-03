@@ -19,10 +19,6 @@ on:
           - apply
           - destroy
         default: apply
-      plan_run_id:
-        description: PR workflow run ID containing the approved plan (apply only)
-        required: false
-        type: string
 
 permissions:
   actions: read
@@ -48,22 +44,8 @@ jobs:
       TF_VAR_ssh_public_key: ${{ secrets.TF_SSH_PUBLIC_KEY }}
 
     steps:
-      - name: Resolve checkout ref
-        id: plan_context
-        env:
-          PLAN_RUN_ID: ${{ inputs.plan_run_id }}
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          if [ -n "$PLAN_RUN_ID" ]; then
-            echo "ref=$(gh run view "$PLAN_RUN_ID" --json headSha --jq .headSha)" >> "$GITHUB_OUTPUT"
-          else
-            echo "ref=${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
-          fi
-
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          ref: ${{ steps.plan_context.outputs.ref }}
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
@@ -99,15 +81,7 @@ jobs:
         working-directory: ./environments/${{ inputs.environment || 'dev' }}
         run: terraform init -input=false
 
-      - name: Download approved plan
-        if: github.event_name == 'workflow_dispatch' && inputs.action == 'apply' && inputs.plan_run_id != ''
-        env:
-          GH_TOKEN: ${{ github.token }}
-        working-directory: ./environments/${{ inputs.environment || 'dev' }}
-        run: gh run download "${{ inputs.plan_run_id }}" --name "terraform-plan-${{ inputs.environment || 'dev' }}" --dir .
-
       - name: Create Terraform plan
-        if: github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && inputs.plan_run_id == '')
         working-directory: ./environments/${{ inputs.environment || 'dev' }}
         run: |
           if [ "${{ inputs.action }}" = "destroy" ]; then
@@ -118,7 +92,6 @@ jobs:
           terraform show -no-color tfplan > tfplan.txt
 
       - name: Upload Terraform plan
-        if: github.event_name == 'pull_request'
         uses: actions/upload-artifact@v4
         with:
           name: terraform-plan-${{ inputs.environment || 'dev' }}
