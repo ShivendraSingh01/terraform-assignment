@@ -8,24 +8,9 @@ variable "location" {
   description = "Azure region"
 }
 
-variable "vnet_name" {
+variable "name_prefix" {
   type        = string
-  description = "Name of the virtual network"
-}
-
-variable "subnet_name" {
-  type        = string
-  description = "Name of the subnet"
-}
-
-variable "public_ip_name" {
-  type        = string
-  description = "Name of the public IP"
-}
-
-variable "nat_gateway_name" {
-  type        = string
-  description = "Name of the NAT gateway"
+  description = "Prefix used to name network resources"
 }
 
 variable "vnet_address_space" {
@@ -33,7 +18,18 @@ variable "vnet_address_space" {
   description = "CIDR for the VNet"
 }
 
-variable "subnet_address_prefix" {
+variable "app_gateway_subnet_address_prefix" {
   type        = string
-  description = "CIDR for the subnet"
+  description = "CIDR for the Application Gateway subnet"
+}
+
+variable "private_subnet_address_prefixes" {
+  type        = list(string)
+  description = "CIDR blocks for private subnets"
+}
+
+variable "tags" {
+  type        = map(string)
+  description = "Tags to apply to taggable network resources"
+  default     = {}
 }

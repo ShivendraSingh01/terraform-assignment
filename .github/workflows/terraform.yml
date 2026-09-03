@@ -1,35 +1,144 @@
-name: Terraform CI
+name: Terraform
 
 on:
-  push:
-    branches: [main, master]
   pull_request:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Terraform environment
+        required: true
+        type: choice
+        options:
+          - dev
+        default: dev
+      action:
+        description: Operation to perform
+        required: true
+        type: choice
+        options:
+          - apply
+          - destroy
+        default: apply
+      plan_run_id:
+        description: PR workflow run ID containing the approved plan (apply only)
+        required: false
+        type: string
+
+permissions:
+  actions: read
+  contents: read
+  id-token: write
+
+concurrency:
+  group: terraform-${{ inputs.environment || 'dev' }}
+  cancel-in-progress: false
 
 jobs:
   terraform:
-    name: Validate Terraform
+    name: Terraform ${{ inputs.action || 'plan' }}
     runs-on: ubuntu-latest
+    environment: ${{ inputs.environment || 'dev' }}
+    env:
+      TF_VERSION: 1.5.0
+      ARM_USE_OIDC: true
+      ARM_USE_AZUREAD: true
+      ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+      ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      TFVARS_CONTENT: ${{ secrets.TFVARS_DEV }}
+      SSH_PUBLIC_KEY: ${{ secrets.TF_SSH_PUBLIC_KEY }}
 
     steps:
+      - name: Resolve checkout ref
+        id: plan_context
+        env:
+          PLAN_RUN_ID: ${{ inputs.plan_run_id }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ -n "$PLAN_RUN_ID" ]; then
+            echo "ref=$(gh run view "$PLAN_RUN_ID" --json headSha --jq .headSha)" >> "$GITHUB_OUTPUT"
+          else
+            echo "ref=${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.plan_context.outputs.ref }}
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
-          terraform_version: 1.5.0
+          terraform_version: ${{ env.TF_VERSION }}
 
       - name: Terraform fmt
+        if: github.event_name == 'pull_request'
         run: terraform fmt -check -recursive
 
-      - name: Validate dev
-        working-directory: ./environments/dev
+      - name: Prepare Terraform inputs
+        working-directory: ./environments/${{ inputs.environment || 'dev' }}
+        run: |
+          test -n "$TFVARS_CONTENT" || { echo "TFVARS_DEV secret is required"; exit 1; }
+          test -n "$SSH_PUBLIC_KEY" || { echo "TF_SSH_PUBLIC_KEY secret is required"; exit 1; }
+          printf '%s\n' "$TFVARS_CONTENT" > ci.auto.tfvars
+          mkdir -p "$HOME/.ssh"
+          printf '%s\n' "$SSH_PUBLIC_KEY" > "$HOME/.ssh/terraform.pub"
+          printf '\npublic_key_path = "%s/.ssh/terraform.pub"\n' "$HOME" >> ci.auto.tfvars
+
+      - name: Terraform validate
+        working-directory: ./environments/${{ inputs.environment || 'dev' }}
         run: |
           terraform init -backend=false
           terraform validate
 
-      - name: Validate prod
-        working-directory: ./environments/prod
+      - name: Azure login
+        if: github.event_name == 'pull_request' || inputs.action == 'apply' || inputs.action == 'destroy'
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Terraform init
+        if: github.event_name == 'pull_request' || inputs.action == 'apply' || inputs.action == 'destroy'
+        working-directory: ./environments/${{ inputs.environment || 'dev' }}
+        run: terraform init -input=false
+
+      - name: Download approved plan
+        if: github.event_name == 'workflow_dispatch' && inputs.action == 'apply' && inputs.plan_run_id != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        working-directory: ./environments/${{ inputs.environment || 'dev' }}
+        run: gh run download "${{ inputs.plan_run_id }}" --name "terraform-plan-${{ inputs.environment || 'dev' }}" --dir .
+
+      - name: Create Terraform plan
+        if: github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && inputs.plan_run_id == '')
+        working-directory: ./environments/${{ inputs.environment || 'dev' }}
         run: |
-          terraform init -backend=false
-          terraform validate
+          if [ "${{ inputs.action }}" = "destroy" ]; then
+            terraform plan -destroy -input=false -out=tfplan
+          else
+            terraform plan -input=false -out=tfplan
+          fi
+          terraform show -no-color tfplan > tfplan.txt
+
+      - name: Upload Terraform plan
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: terraform-plan-${{ inputs.environment || 'dev' }}
+          path: |
+            environments/${{ inputs.environment || 'dev' }}/tfplan
+            environments/${{ inputs.environment || 'dev' }}/tfplan.txt
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Apply Terraform plan
+        if: github.event_name == 'workflow_dispatch' && inputs.action == 'apply'
+        working-directory: ./environments/${{ inputs.environment || 'dev' }}
+        run: terraform apply -input=false -auto-approve tfplan
+
+      - name: Destroy Terraform resources
+        if: github.event_name == 'workflow_dispatch' && inputs.action == 'destroy'
+        working-directory: ./environments/${{ inputs.environment || 'dev' }}
+        run: terraform apply -input=false -auto-approve tfplan
