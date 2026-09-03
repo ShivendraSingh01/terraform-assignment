@@ -21,10 +21,9 @@ variable "admin_username" {
   description = "Admin username for the VM"
 }
 
-variable "public_key_path" {
+variable "ssh_public_key" {
   type        = string
-  description = "Path to the SSH public key for the VMSS admin user"
-  default     = "~/.ssh/id_rsa.pub"
+  description = "SSH public key for the VMSS admin user"
 }
 
 variable "vnet_address_space" {

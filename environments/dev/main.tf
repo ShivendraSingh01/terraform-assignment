@@ -79,7 +79,7 @@ module "vmss" {
   backend_address_pool_id     = module.application_gateway.backend_address_pool_id
   identity_id                 = module.identity.identity_id
   admin_username              = var.admin_username
-  public_key                  = file(pathexpand(var.public_key_path))
+  public_key                  = var.ssh_public_key
   vmss_sku                    = var.vmss_sku
   vmss_instance_count         = var.vmss_instance_count
   zones                       = var.zones

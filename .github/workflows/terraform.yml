@@ -45,8 +45,7 @@ jobs:
       ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
       ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
       ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-      TFVARS_CONTENT: ${{ secrets.TFVARS_DEV }}
-      SSH_PUBLIC_KEY: ${{ secrets.TF_SSH_PUBLIC_KEY }}
+      TF_VAR_ssh_public_key: ${{ secrets.TF_SSH_PUBLIC_KEY }}
 
     steps:
       - name: Resolve checkout ref
@@ -75,15 +74,11 @@ jobs:
         if: github.event_name == 'pull_request'
         run: terraform fmt -check -recursive
 
-      - name: Prepare Terraform inputs
+      - name: Check Terraform inputs
         working-directory: ./environments/${{ inputs.environment || 'dev' }}
         run: |
-          test -n "$TFVARS_CONTENT" || { echo "TFVARS_DEV secret is required"; exit 1; }
-          test -n "$SSH_PUBLIC_KEY" || { echo "TF_SSH_PUBLIC_KEY secret is required"; exit 1; }
-          printf '%s\n' "$TFVARS_CONTENT" > ci.auto.tfvars
-          mkdir -p "$HOME/.ssh"
-          printf '%s\n' "$SSH_PUBLIC_KEY" > "$HOME/.ssh/terraform.pub"
-          printf '\npublic_key_path = "%s/.ssh/terraform.pub"\n' "$HOME" >> ci.auto.tfvars
+          test -f terraform.tfvars || { echo "terraform.tfvars is required in the environment directory"; exit 1; }
+          test -n "$TF_VAR_ssh_public_key" || { echo "TF_SSH_PUBLIC_KEY secret is required"; exit 1; }
 
       - name: Terraform validate
         working-directory: ./environments/${{ inputs.environment || 'dev' }}
