@@ -59,6 +59,20 @@ resource "azurerm_network_security_rule" "vmss_from_app_gateway" {
   network_security_group_name = azurerm_network_security_group.vmss.name
 }
 
+resource "azurerm_network_security_rule" "vmss_ssh" {
+  name                        = "Allow-SSH"
+  priority                    = 110
+  direction                   = "Inbound"
+  access                      = "Allow"
+  protocol                    = "Tcp"
+  source_port_range           = "*"
+  destination_port_range      = "22"
+  source_address_prefix       = var.ssh_source_address_prefix
+  destination_address_prefix  = "*"
+  resource_group_name         = var.resource_group_name
+  network_security_group_name = azurerm_network_security_group.vmss.name
+}
+
 resource "azurerm_subnet_network_security_group_association" "app_gateway" {
   subnet_id                 = var.app_gateway_subnet_id
   network_security_group_id = azurerm_network_security_group.app_gateway.id

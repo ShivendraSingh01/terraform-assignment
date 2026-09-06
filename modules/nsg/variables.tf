@@ -40,6 +40,12 @@ variable "backend_port" {
   default     = 80
 }
 
+variable "ssh_source_address_prefix" {
+  type        = string
+  description = "Source address prefix allowed to SSH into the VMSS"
+  default     = "*"
+}
+
 variable "tags" {
   type        = map(string)
   description = "Tags to apply to NSG resources"

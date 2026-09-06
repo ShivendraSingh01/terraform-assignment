@@ -36,6 +36,7 @@ module "nsg" {
   app_gateway_subnet_address_prefix = var.app_gateway_subnet_address_prefix
   frontend_port                     = var.frontend_port
   backend_port                      = var.backend_port
+  ssh_source_address_prefix         = var.ssh_source_address_prefix
   tags                              = local.common_tags
 }
 
