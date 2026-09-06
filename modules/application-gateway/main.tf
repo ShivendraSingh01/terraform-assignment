@@ -70,6 +70,10 @@ resource "azurerm_application_gateway" "gateway" {
     interval            = 30
     timeout             = 30
     unhealthy_threshold = 3
+
+    match {
+      status_code = ["200-399"]
+    }
   }
 
   http_listener {

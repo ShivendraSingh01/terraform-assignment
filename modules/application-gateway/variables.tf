@@ -51,7 +51,7 @@ variable "backend_port" {
 variable "health_probe_path" {
   type        = string
   description = "Application Gateway health probe path"
-  default     = "/"
+  default     = "/healthz"
 }
 
 variable "health_probe_host" {

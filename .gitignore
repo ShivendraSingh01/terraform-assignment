@@ -8,6 +8,7 @@ crash.log
 !*.tfvars.example
 !bootstrap/remote-state/terraform.tfvars
 !environments/dev/terraform.tfvars
+!environments/prod/terraform.tfvars
 
 # Editor/OS
 .vscode/

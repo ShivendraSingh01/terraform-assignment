@@ -1,7 +1,7 @@
 variable "location" {
   type        = string
   default     = "eastus"
-  description = "Azure region for dev environment"
+  description = "Azure region for prod environment"
 }
 
 variable "resource_group_name" {
@@ -11,7 +11,7 @@ variable "resource_group_name" {
 
 variable "name_prefix" {
   type        = string
-  default     = "devdemo"
+  default     = "proddemo"
   description = "Resource naming prefix"
 }
 
@@ -29,19 +29,19 @@ variable "ssh_public_key" {
 variable "vnet_address_space" {
   type        = string
   description = "CIDR for the VNet"
-  default     = "10.10.0.0/16"
+  default     = "10.20.0.0/16"
 }
 
 variable "app_gateway_subnet_address_prefix" {
   type        = string
   description = "CIDR for the Application Gateway subnet"
-  default     = "10.10.0.0/24"
+  default     = "10.20.0.0/24"
 }
 
 variable "private_subnet_address_prefixes" {
   type        = list(string)
   description = "CIDR blocks for private subnets"
-  default     = ["10.10.1.0/24", "10.10.2.0/24"]
+  default     = ["10.20.1.0/24", "10.20.2.0/24"]
 }
 
 variable "frontend_port" {
@@ -107,19 +107,19 @@ variable "zones" {
 variable "autoscale_minimum_instances" {
   type        = number
   description = "Minimum VMSS instance count"
-  default     = 1
+  default     = 2
 }
 
 variable "autoscale_maximum_instances" {
   type        = number
   description = "Maximum VMSS instance count"
-  default     = 3
+  default     = 5
 }
 
 variable "scale_out_cpu_threshold" {
   type        = number
   description = "Average CPU percentage that triggers scale out"
-  default     = 75
+  default     = 70
 }
 
 variable "scale_in_cpu_threshold" {

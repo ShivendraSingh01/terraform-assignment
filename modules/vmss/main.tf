@@ -63,7 +63,7 @@ resource "azurerm_virtual_machine_scale_set_extension" "nginx" {
   auto_upgrade_minor_version   = true
 
   settings = jsonencode({
-    commandToExecute = "apt-get update && apt-get install -y nginx && systemctl enable nginx && systemctl restart nginx && echo 'devdemo VMSS backend healthy' > /var/www/html/index.html"
+    commandToExecute = "apt-get update && apt-get install -y nginx && mkdir -p /var/www/html && printf '%s\\n' '${var.name_prefix} VMSS backend healthy' > /var/www/html/index.html && printf '%s\\n' 'ok' > /var/www/html/healthz && systemctl enable nginx && systemctl restart nginx"
   })
 }
 
