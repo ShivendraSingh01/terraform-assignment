@@ -11,6 +11,7 @@ resource "azurerm_linux_virtual_machine_scale_set" "vmss" {
   admin_username      = var.admin_username
   sku                 = var.vmss_sku
   instances           = var.vmss_instance_count
+  upgrade_mode        = "Automatic"
   zones               = var.zones
   tags                = var.tags
 

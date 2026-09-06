@@ -64,7 +64,7 @@ resource "azurerm_application_gateway" "gateway" {
 
   probe {
     name                = local.probe_name
-    host                = var.health_probe_host
+    host                = coalesce(var.health_probe_host, "127.0.0.1")
     protocol            = "Http"
     path                = var.health_probe_path
     interval            = 30
