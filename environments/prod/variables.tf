@@ -65,7 +65,7 @@ variable "health_probe_path" {
 variable "health_probe_host" {
   type        = string
   description = "Application Gateway health probe host header"
-  default     = "127.0.0.1"
+  default     = null
 }
 
 variable "app_gateway_sku_name" {
